@@ -24,12 +24,15 @@
 enum layer_number {
   _BASE = 0,
   _LOWER,
-  _RAISE
+  _RAISE,
+  _ADJUST,
 };
 
 enum custom_keycodes {
   LOWER = SAFE_RANGE,
   RAISE,
+  ADJUST,
+  KANJI,
   RGBRST
 };
 
@@ -37,7 +40,6 @@ enum custom_keycodes {
 #define KC_ALAP  LALT_T(KC_APP)
 #define KC_GRSF  RSFT_T(KC_GRV)
 
-/*
 enum combos {
     AE,
     OE,
@@ -55,7 +57,7 @@ combo_t key_combos[] = {
   [OE] = COMBO(oe_combo, DE_ODIA),
   [UE] = COMBO(ue_combo, DE_UDIA),
   [SZ] = COMBO(sz_combo, DE_SS)
-};*/
+};
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [_BASE] = LAYOUT_base(
@@ -66,7 +68,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //|--------+--------+--------+--------+--------+--------|--------+--------+--------+--------+--------+--------+--------|
       KC_LSFT,    KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M, KC_COMM,  KC_DOT, KC_SLSH,   KC_UP,
   //|--------+--------+--------+--------+--------+--------|--------+--------+--------+--------+--------+--------+--------|
-      KC_LCTL, KC_LGUI, KC_LALT,TO(_LOWER),         KC_SPC, LT(_RAISE, KC_SPC),  KC_DEL, KC_ALAP, KC_LEFT, KC_DOWN, KC_RGHT,
+      KC_LCTL, KC_LGUI, KC_LALT,   LOWER,         KC_SPC, LT(_RAISE, KC_SPC),  KC_DEL, KC_ALAP, KC_LEFT, KC_DOWN, KC_RGHT,
   //`-------------------------------------------------------------------------------------------------------------------'
       KC_GRSF
   // ExtraKey: This key is an extra key. REV1 is a split back space. REV2 is to the right of the arrow-up key.
@@ -98,12 +100,28 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //`-------------------------------------------------------------------------------------------------------------------'
       _______
   // ExtraKey: This key is an extra key. REV1 is a split back space. REV2 is to the right of the arrow-up key.
+  ),
+
+  [_ADJUST] = LAYOUT_base(
+  //,--------------------------------------------------------------------------------------------------------------------.
+      XXXXXXX,   QK_BOOT,  RGBRST, AG_NORM, AG_SWAP, XXXXXXX, XXXXXXX, KC_WH_L, KC_WH_U, KC_HOME, KC_PGUP,          XXXXXXX,
+  //|--------+--------+--------+--------+--------+--------|--------+--------+--------+--------+--------+-----------------|
+      XXXXXXX, RGB_TOG, RGB_HUI, RGB_SAI, RGB_VAI, XXXXXXX, XXXXXXX, KC_WH_R, KC_WH_D,  KC_END, KC_PGDN,          XXXXXXX,
+  //|--------+--------+--------+--------+--------+--------|--------+--------+--------+--------+--------+--------+--------|
+      _______, RGB_MOD, RGB_HUD, RGB_SAD, RGB_VAD, XXXXXXX, XXXXXXX, XXXXXXX, KC_BTN1, KC_BTN2, XXXXXXX, KC_MS_U,
+  //|--------+--------+--------+--------+--------+--------|--------+--------+--------+--------+--------+--------+--------|
+      _______, _______, _______, _______,          XXXXXXX,          XXXXXXX, _______, XXXXXXX, KC_MS_L, KC_MS_D, KC_MS_R,
+  //`-------------------------------------------------------------------------------------------------------------------'
+      _______
+  // ExtraKey: This key is an extra key. REV1 is a split back space. REV2 is to the right of the arrow-up key.
   )
 };
 
 #define L_BASE _BASE
 #define L_LOWER (1<<_LOWER)
 #define L_RAISE (1<<_RAISE)
+#define L_ADJUST (1<<_ADJUST)
+#define L_ADJUST_TRI (L_ADJUST|L_RAISE|L_LOWER)
 
 #ifdef OLED_ENABLE
 #include <stdio.h>
@@ -119,7 +137,8 @@ const LAYER_DISPLAY_NAME layer_display_name[LAYER_DISPLAY_MAX] = {
   {L_BASE, "Base"},
   {L_BASE + 1, "Base"},
   {L_LOWER, "Lower"},
-  {L_RAISE, "Raise"}
+  {L_RAISE, "Raise"},
+  {L_ADJUST_TRI, "Adjust"}
 };
 
 static inline const char* get_leyer_status(void) {
@@ -197,6 +216,23 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
   bool result = false;
   switch (keycode) {
+    case LOWER:
+      update_change_layer(record->event.pressed, _LOWER, _RAISE, _ADJUST);
+      break;
+    case RAISE:
+      update_change_layer(record->event.pressed, _RAISE, _LOWER, _ADJUST);
+        break;
+    case KANJI:
+      if (record->event.pressed) {
+        if (keymap_config.swap_lalt_lgui == false) {
+          register_code(KC_LNG2);
+        } else {
+          SEND_STRING(SS_LALT("`"));
+        }
+      } else {
+        unregister_code(KC_LNG2);
+      }
+      break;
     #ifdef RGBLIGHT_ENABLE
       case RGBRST:
           if (record->event.pressed) {
@@ -238,8 +274,10 @@ void keyboard_post_init_user(void) {
 }
 
 layer_state_t layer_state_set_user(layer_state_t state) {
+    state = update_tri_layer_state(state, _LOWER, _RAISE, _ADJUST);
     rgblight_set_layer_state(0, layer_state_cmp(state, 1));
     rgblight_set_layer_state(1, layer_state_cmp(state, 2));
+    rgblight_set_layer_state(2, layer_state_cmp(state, 3));
     return state;
 }
 

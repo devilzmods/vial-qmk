@@ -17,12 +17,6 @@
 #pragma once
 
 // place overrides here
-#define VIAL_KEYBOARD_UID {0x7A, 0x1D, 0x2B, 0xBD, 0xA7, 0xD6, 0x7E, 0x47}
-#define VIAL_UNLOCK_COMBO_ROWS {1,4}
-#define VIAL_UNLOCK_COMBO_COLS {0,5}
-
-#define VIAL_COMBO_ENTRIES 4
-#define DYNAMIC_KEYMAP_LAYER_COUNT 3
 
 #ifdef TAPPING_TERM
 #undef TAPPING_TERM
