@@ -1,0 +1,10 @@
+VIA_ENABLE = yes
+VIAL_ENABLE = yes
+
+RGBLIGHT_ENABLE = yes
+
+#Firmware Size reduction
+LTO_ENABLE = yes
+QMK_SETTINGS = no
+TAP_DANCE_ENABLE = no
+#KEY_OVERRIDE_ENABLE = no
